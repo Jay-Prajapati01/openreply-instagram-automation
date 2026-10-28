@@ -50,6 +50,7 @@ Copy `.env.example` to `.env` for local work, or set the values in Vercel and Re
 | `CRON_SECRET` | Random secret protecting the token-refresh cron. |
 | `ENCRYPTION_KEY` | 32-byte hex. `openssl rand -hex 32`. Encrypts Instagram tokens. Identical across web and worker. |
 | `DATABASE_URL` | PostgreSQL URL from Neon. Use the same database on Vercel and Render. |
+| `DIRECT_URL` | Optional direct, non-pooler Neon URL for schema migrations. Vercel should set it; local setups can omit it. |
 | `REDIS_URL` | Authenticated Redis TCP URL with TLS. Use the same Redis instance in Vercel and Render; HTTP-only Redis will not work with BullMQ. |
 | `RESEND_API_KEY` | Optional Resend key. Not needed when `EMAIL_SERVER` is set. |
 | `EMAIL_FROM` | The sender address/name for magic links; for Gmail SMTP use your Gmail address. |

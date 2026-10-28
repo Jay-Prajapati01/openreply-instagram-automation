@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Use Neon’s direct endpoint for migrations; app requests keep using the
+    // pooled DATABASE_URL through PrismaPg in the frontend and worker.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

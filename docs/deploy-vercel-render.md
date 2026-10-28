@@ -21,8 +21,10 @@ monetized or business deployment unless your plan permits that use.
 
 ## 1. Create the external data services
 
-1. Create a Neon PostgreSQL project and copy its connection string. Use a
-   connection string supported by Prisma; keep the credentials private.
+1. Create a Neon PostgreSQL project and copy both connection strings. Set the
+   pooled URL (hostname includes `-pooler`) as `DATABASE_URL` for app traffic;
+   use the direct, non-pooler URL as `DIRECT_URL` for Prisma migrations. Keep
+   the credentials private.
 2. Create one Redis database with native TCP and TLS access, such as Redis
    Cloud or Upstash Redis. Copy its `rediss://` connection string. Do not use a
    REST-only Redis endpoint: BullMQ requires native Redis TCP commands.
@@ -45,7 +47,7 @@ Set these Vercel Production environment variables:
 - `NEXTAUTH_URL`: the assigned Vercel URL, such as `https://your-app.vercel.app`.
 - `NEXTAUTH_SECRET`: a random secret (`openssl rand -base64 32`).
 - `CRON_SECRET`: a separate random secret.
-- `DATABASE_URL`, `REDIS_URL`, and `ENCRYPTION_KEY` from Step 1.
+- `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL`, and `ENCRYPTION_KEY` from Step 1.
 - `EMAIL_SERVER`: Gmail SMTP URL (see `setup.md` for app-password setup).
 - `EMAIL_FROM`: the Gmail address used to send sign-in links.
 - `ALLOWED_EMAILS`: your email address; this restricts login to you.
@@ -74,10 +76,10 @@ allowance.
 
 ## 4. Run migrations and connect Meta
 
-The Vercel build runs `prisma migrate deploy` using its production
-`DATABASE_URL`. If you need to initialize the database separately, configure a
-local `.env` with the Neon URL and run `npm run db:migrate` once from the repo
-root.
+The Vercel build runs `prisma migrate deploy` using `DIRECT_URL`, falling back
+to `DATABASE_URL` if no direct URL is configured. If you need to initialize the
+database separately, configure a local `.env` with the Neon URLs and run
+`npm run db:migrate` once from the repo root.
 
 After Vercel is live, register these URLs in your Meta app:
 
