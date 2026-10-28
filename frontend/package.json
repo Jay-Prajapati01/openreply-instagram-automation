@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "node ../scripts/next-with-root-env.cjs dev",
-    "build": "node ../scripts/next-with-root-env.cjs build",
+    "build": "npm --prefix .. run db:generate && node ../scripts/next-with-root-env.cjs build",
     "start": "node ../scripts/next-with-root-env.cjs start",
     "lint": "eslint .",
     "vercel-build": "npm --prefix .. run db:generate && npm --prefix .. run db:migrate && node ../scripts/next-with-root-env.cjs build"

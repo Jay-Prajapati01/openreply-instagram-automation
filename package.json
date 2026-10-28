@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
-    "build": "npm run db:generate && npm run build --workspace=frontend",
-    "vercel-build": "npm run db:generate && npm run db:migrate && npm run build --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "vercel-build": "npm run vercel-build --workspace=frontend",
     "start": "npm run start --workspace=frontend",
     "lint": "npm run lint --workspaces --if-present",
     "db:generate": "prisma generate",
