@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { reconstructFollowerTotals } from "../lib/reports/follower-history";
+import { reconstructFollowerTotals } from "../frontend/lib/reports/follower-history";
 
 describe("reconstructFollowerTotals", () => {
   it("walks backwards from the current total", () => {

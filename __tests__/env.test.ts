@@ -4,7 +4,7 @@ import {
   getMetaGraphApiVersion,
   isEmailAllowedToSignIn,
   requireEnv,
-} from "../lib/env";
+} from "../frontend/lib/env";
 
 beforeEach(() => {
   vi.unstubAllEnvs();

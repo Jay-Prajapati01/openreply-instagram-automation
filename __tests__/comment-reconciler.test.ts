@@ -13,7 +13,7 @@ const { mockPrisma } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db/client", () => ({ prisma: mockPrisma }));
 
-import { adMediaFor } from "../lib/polling/comment-reconciler";
+import { adMediaFor } from "../frontend/lib/polling/comment-reconciler";
 
 const POST = "18023946917554990";
 const AD = "17899788633163100";

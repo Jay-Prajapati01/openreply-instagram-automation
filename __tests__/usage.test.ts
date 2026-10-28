@@ -29,7 +29,7 @@ vi.mock("@/lib/db/client", () => ({
 import {
   releaseWorkspaceDMReservation,
   reserveWorkspaceDMSend,
-} from "../lib/billing/usage";
+} from "../frontend/lib/billing/usage";
 
 beforeEach(() => {
   vi.clearAllMocks();

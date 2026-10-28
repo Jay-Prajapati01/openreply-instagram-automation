@@ -1,8 +1,8 @@
 # Stack
 
-Everything OpenReply needs to run, in one place: the application libraries, the
-runtime processes, and the specific (free) services this instance is deployed on.
-For the step-by-step setup, see [setup.md](setup.md).
+Everything OpenReply needs to run, in one place: the application libraries,
+runtime processes, and hosting layout. For setup, see
+[deploy-vercel-render.md](deploy-vercel-render.md) and [setup.md](setup.md).
 
 ## Application
 
@@ -18,7 +18,7 @@ For the step-by-step setup, see [setup.md](setup.md).
 | Charts | Recharts 3 |
 | Styling | Tailwind CSS 4 |
 | Tests | Vitest 4 |
-| Worker runtime | `tsx` (runs `worker/dm-worker.ts`) |
+| Worker runtime | `tsx` (runs `backend/worker/dm-worker.ts`) |
 | Instagram | Official Meta Graph API (Instagram Login) |
 
 ## Runtime — two processes, two datastores
@@ -33,23 +33,24 @@ For the step-by-step setup, see [setup.md](setup.md).
 - **Redis**: the BullMQ send queue and the per-account rate limiter. Must speak the
   native Redis protocol over TCP (an HTTP-only Redis will not work with BullMQ).
 
-The web app and the worker must share the same `DATABASE_URL`, `REDIS_URL`, and
-`ENCRYPTION_KEY`. The web app stores the encrypted Instagram token; the worker
-decrypts it to send. Different keys mean every send fails to decrypt.
+The web app and worker use the same Postgres database, Redis instance, and
+`ENCRYPTION_KEY`. Vercel uses the database's external URL; the Render worker can
+use its private URL. Both use the same authenticated TCP Redis URL because
+BullMQ does not support HTTP-only Redis APIs. The web app stores encrypted
+Instagram tokens; the worker decrypts them to send replies.
 
-## Reference free deployment
+## Recommended deployment layout
 
-The zero-cost stack this instance runs on. Alternatives (e.g. Railway for the
-worker + Postgres + Redis) are covered in [setup.md](setup.md).
+The deployment prepared in this repository:
 
-| Piece | Service | Free tier |
+| Piece | Service | Notes |
 | --- | --- | --- |
-| Web app | Vercel (Hobby) | Free |
-| PostgreSQL | Neon | Free (~0.5 GB) |
-| Redis | Redis Cloud (Essentials) | Free (30 MB, TCP) |
-| Worker (24/7) | Oracle Cloud "Always Free" VM (VM.Standard.E2.1.Micro, Ubuntu 22.04, kept alive with `pm2`) | Free forever |
-| Login email | Resend | Free (3k emails/mo) |
-| Instagram API | Meta app with Instagram Login | Free |
+| Web app and webhook | Vercel | Set the project root to `frontend/`. |
+| Background worker | Render | Must use an always-on worker plan. |
+| PostgreSQL | Render | The Blueprint uses a paid plan; Vercel needs the external URL. |
+| Redis | Redis Cloud or another authenticated TCP Redis provider | Share its TLS URL with Vercel and Render. |
+| Login email | Resend | Required unless SMTP is configured. |
+| Instagram API | Meta app with Instagram Login | App Review may be needed for accounts without a role on your app. |
 
 ## Environment variables
 

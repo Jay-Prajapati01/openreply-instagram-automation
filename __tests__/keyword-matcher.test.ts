@@ -9,7 +9,7 @@ import {
   foldDiacritics,
   matchKeywords,
   stripSpecialCharacters,
-} from "../lib/utils/keyword-matcher";
+} from "../frontend/lib/utils/keyword-matcher";
 
 describe("stripSpecialCharacters", () => {
   it("should remove emojis", () => {

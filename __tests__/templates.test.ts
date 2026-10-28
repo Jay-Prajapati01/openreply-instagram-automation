@@ -3,7 +3,7 @@ import {
   CAMPAIGN_TEMPLATES,
   getCampaignTemplate,
   getCampaignTemplateSlugs,
-} from "../lib/templates/campaign-templates";
+} from "../frontend/lib/templates/campaign-templates";
 
 describe("campaign templates", () => {
   it("ships the public launch template set", () => {

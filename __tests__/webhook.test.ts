@@ -10,7 +10,7 @@ import {
   parseCommentEvents,
   parseMessageEvents,
   parseReadEvents,
-} from "../lib/meta/webhook";
+} from "../frontend/lib/meta/webhook";
 import { createHmac } from "crypto";
 
 // Mock the environment variable

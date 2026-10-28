@@ -32,7 +32,7 @@ import {
   incrementDMCounter,
   reserveDMSlot,
   RATE_LIMIT_MAX,
-} from "../lib/utils/rate-limiter";
+} from "../frontend/lib/utils/rate-limiter";
 
 beforeEach(() => {
   vi.clearAllMocks();

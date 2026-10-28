@@ -20,8 +20,8 @@ vi.mock("@/lib/db/client", () => ({
   prisma: mockPrisma,
 }));
 
-import { getCampaignReportBySlug } from "../lib/reports/data";
-import { buildReportUrl, isReportBranded } from "../lib/reports/share";
+import { getCampaignReportBySlug } from "../frontend/lib/reports/data";
+import { buildReportUrl, isReportBranded } from "../frontend/lib/reports/share";
 
 const baseAutomation = {
   id: "automation_123",

@@ -1,0 +1,7 @@
+{
+  "name": "@openreply/backend",
+  "private": true,
+  "scripts": {
+    "worker": "node --import=tsx worker/bootstrap.ts"
+  }
+}

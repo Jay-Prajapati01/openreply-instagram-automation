@@ -17,11 +17,11 @@ vi.mock("@/lib/db/client", () => ({
 import {
   canConnectInstagramAccount,
   getWorkspaceInstagramAccount,
-} from "../lib/instagram-accounts";
+} from "../frontend/lib/instagram-accounts";
 import {
   buildInvitationUrl,
   normalizeInvitationEmail,
-} from "../lib/workspace-invitations";
+} from "../frontend/lib/workspace-invitations";
 
 beforeEach(() => {
   vi.clearAllMocks();

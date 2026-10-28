@@ -57,15 +57,13 @@ The web app receives the webhook and serves the dashboard. A separate worker pro
 
 ## Quick start
 
-You need a few free accounts before anything works: a Meta developer app, a Resend account for login emails, and somewhere to host (Vercel for the web app, Railway for the worker plus Postgres and Redis). The Instagram account you connect has to be a Business or Creator account, not a personal one.
+You need a Meta developer app, a Resend account for login emails, and hosting. This repository uses a Vercel frontend and a Render background worker. The Instagram account you connect has to be a Business or Creator account, not a personal one. Hosting and database costs depend on the plans you choose.
 
-The honest version: the code deploys in minutes, but the Meta app setup is the part that takes real time. Read [docs/setup.md](docs/setup.md) before you start. It is the single setup guide, covering hosting, your domain, the environment, and every Meta wrong turn so you do not have to find them yourself.
+The honest version: the code deploys in minutes, but the Meta app setup is the part that takes real time. Read [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) for hosting, then [docs/setup.md](docs/setup.md) for environment variables and Meta setup.
 
 ### Deploy the web app
 
-This is the part people skip. There is no shared instance to join — the button below creates *your* deployment, on *your* domain, which is the only thing your Meta app is allowed to talk to.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/diwenne/openreply)
+Vercel's project root directory is `frontend/`. Render uses the root `render.yaml` Blueprint to configure the background worker and Postgres. Follow [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) to connect your own GitHub repository and hosting accounts.
 
 ### Run it locally
 
@@ -82,7 +80,7 @@ npm run worker            # in a second terminal, this sends the DMs
 
 Two processes, always. `npm run dev` serves the app and receives webhooks. `npm run worker` is what actually sends the messages. If comments come in and no DM ever arrives, the worker is the first thing to check.
 
-Full environment variables and the production layout are in [docs/setup.md](docs/setup.md).
+The frontend workspace is in `frontend/`, the persistent worker is in `backend/`, and shared Prisma migrations remain in `prisma/`. Environment variables and production setup are in [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) and [docs/setup.md](docs/setup.md).
 
 ## Set it up with your AI assistant
 

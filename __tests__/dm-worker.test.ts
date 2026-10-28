@@ -128,7 +128,7 @@ vi.mock("bullmq", () => {
   };
 });
 
-import { createDMWorker } from "../lib/queue/dm-worker";
+import { createDMWorker } from "../frontend/lib/queue/dm-worker";
 
 const usagePeriodStart = new Date("2026-05-01T00:00:00.000Z");
 

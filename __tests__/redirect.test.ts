@@ -15,7 +15,7 @@ vi.mock("@/lib/db/client", () => ({
   prisma: mockPrisma,
 }));
 
-import { GET } from "../app/r/[slug]/route";
+import { GET } from "../frontend/app/r/[slug]/route";
 
 beforeEach(() => {
   vi.clearAllMocks();

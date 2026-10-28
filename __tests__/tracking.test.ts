@@ -3,13 +3,13 @@ import {
   calculateCtr,
   normalizeTopKeywords,
   summarizeDmStatuses,
-} from "../lib/tracking/analytics";
+} from "../frontend/lib/tracking/analytics";
 import {
   buildTrackedUrl,
   extractFirstUrl,
   renderMessageWithTracking,
   replaceUrlWithTrackedPlaceholder,
-} from "../lib/tracking/message";
+} from "../frontend/lib/tracking/message";
 
 describe("tracked link messages", () => {
   it("extracts a destination URL and replaces it with the tracked placeholder", () => {

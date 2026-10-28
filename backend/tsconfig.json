@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "worker/**/*.ts",
+    "../frontend/lib/**/*.ts",
+    "../frontend/app/generated/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

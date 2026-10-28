@@ -6,83 +6,41 @@ If you would rather have an AI assistant drive most of this, skip to [Set it up 
 
 ## How it is built
 
-OpenReply is two processes and two datastores.
+OpenReply is split into a frontend workspace and a backend worker workspace.
 
-- Web app and API: Next.js. Serves the dashboard, the OAuth callback, and the incoming webhook. Runs well on Vercel.
-- Worker: a long-running Node process (`npm run worker`) that consumes the send queue and runs the polling reconciler. It cannot run on Vercel, because serverless functions are short-lived and a queue consumer has to stay up. Railway, Render, Fly, or any always-on box works.
-- PostgreSQL: campaigns, logs, accounts, sessions.
-- Redis: the BullMQ send queue and the per-account rate limiter.
+- `frontend/`: Next.js dashboard, API routes, OAuth callback, and Meta webhook. Deploy this workspace to Vercel.
+- `backend/`: long-running Node worker (`npm run worker`) that consumes the send queue and reconciles missed comments. Deploy it as an always-on Render background worker.
+- PostgreSQL: campaigns, logs, accounts, and sessions. The worker uses Render's private connection; Vercel uses the database's external connection URL.
+- Redis: BullMQ queue and per-account rate limiter. Use a Redis provider with authenticated TCP/TLS access so both Vercel and Render can reach the same instance. An HTTP-only Redis API will not work with BullMQ.
 
-The web app and the worker must share the same `DATABASE_URL`, the same `REDIS_URL`, and the same `ENCRYPTION_KEY`. The web app writes an encrypted Instagram token; the worker decrypts it to send. Different keys mean every send fails to decrypt.
+Both services must use the same database, Redis instance, and `ENCRYPTION_KEY`. The web app stores an encrypted Instagram token; the worker decrypts it to send. Different keys mean every send fails to decrypt.
 
 ## What you need first
 
 - A Facebook account. Meta developer registration is built on it. There is no Instagram-only path.
 - An Instagram Business or Creator account. A personal account cannot be connected. Switch it in the Instagram app under Settings, Account type, if needed.
 - A [Resend](https://resend.com) account for login emails, with a verified sender domain. Login is email magic links only, so without this nobody can sign in. If you already run your own mail server, you can point `EMAIL_SERVER` at it instead and skip Resend entirely — see the [environment variables](#environment-variables) table.
-- Somewhere to host. The recommended setup, used throughout this guide, is Vercel for the web app and Railway for the worker plus Postgres and Redis. Both have free tiers that are enough to run this for a single account.
+- A GitHub repository containing your copy, a Vercel account, and a Render account. The Render worker and persistent production data require paid plans. See [deploy-vercel-render.md](deploy-vercel-render.md) for the deployment steps.
 
 ## Hosting and your domain
 
 You do not need to buy a domain. Deploying the web app to Vercel gives you a free public URL like `your-app.vercel.app`, and that URL is what everything else points at: `NEXTAUTH_URL`, the Meta OAuth redirect, and the Meta webhook callback all use it. If you want a custom domain later you can add one, but it is optional and you can launch without it.
 
-Recommended split:
+Deployment split:
 
-- Web app: Vercel. You get `your-app.vercel.app` for free on deploy.
-- Worker, Postgres, Redis: Railway.
+- Web app and Meta webhook: Vercel, with project root `frontend/`.
+- Worker and PostgreSQL: Render, configured from the root `render.yaml` Blueprint.
+- Redis: an authenticated TCP Redis service such as Redis Cloud. Its TLS URL is shared by both app workspaces.
 
-Do Railway first, because Vercel needs the database URLs from it.
+Follow [deploy-vercel-render.md](deploy-vercel-render.md) to create the GitHub repository, configure both hosting providers, and set the external database and Redis URLs.
 
-### Step 1: Railway (Postgres, Redis, worker)
+Vercel cron definitions are in `frontend/vercel.json`. On Vercel Hobby, each cron can run at most once per day, so a campaign waiting for the next Reel can take up to a day to attach. The comment reconciliation poll runs in the Render worker every five minutes.
 
-1. Create a Railway account and a New Project.
-2. In the project, click New, then Database, then Add PostgreSQL.
-3. Click New, then Database, then Add Redis.
-4. Add the worker: click New, then GitHub Repo, and select your fork of this repo. Railway detects the Node app.
-5. Open the worker service's Settings and set the Build Command and Start Command:
-   ```
-   Build Command:  npm run db:generate
-   Start Command:  npm run worker
-   ```
-   The worker only needs the generated Prisma client, not `next build`. Do not leave the build as the default `npm run build`: it runs `next build` needlessly, and any build step that reaches the database (like `prisma migrate deploy`) fails here, because the worker cannot connect to Postgres at build time. Migrations are applied by the web app's `vercel-build` (Step 3) and by the manual `db:migrate` below, never by the worker.
-6. Open the worker service's Variables and add all the environment variables from the [table below](#environment-variables). For the worker, use Railway's internal database and Redis hostnames (they look like `postgres.railway.internal` and `redis.railway.internal`); inside Railway's network they are faster and free of egress. `NEXTAUTH_URL` is your Vercel domain. `ENCRYPTION_KEY` must be the exact same value you will use on Vercel.
-
-Getting the connection URLs. Open the Postgres service, then its Variables or Connect tab. You will see two URLs:
-
-| Variable | Host | Use it for |
-| --- | --- | --- |
-| `DATABASE_URL` | `postgres.railway.internal` | the Railway worker only |
-| `DATABASE_PUBLIC_URL` | `*.proxy.rlwy.net` | Vercel, and running migrations from your machine |
-
-Redis is the same: `REDIS_URL` (internal) for the worker, `REDIS_PUBLIC_URL` (public proxy) for Vercel.
-
-Vercel runs outside Railway's private network, so if you give Vercel an internal `*.railway.internal` URL it will hang and time out. Always give Vercel the public URLs.
-
-### Step 2: Migrate the production database
-
-Run once from your machine, using the public Postgres URL:
-
-```bash
-DATABASE_URL="postgresql://...proxy.rlwy.net.../railway" npm run db:migrate
-```
-
-### Step 3: Vercel (web app, and your domain)
-
-1. Create a Vercel account and Add New Project, importing your fork. It auto-detects Next.js.
-2. Under the project's Settings, then Environment Variables, add every variable from the [table below](#environment-variables). Use these values:
-   - `NEXTAUTH_URL`: your Vercel domain, for example `https://your-app.vercel.app`. This is the free domain Vercel assigns on deploy.
-   - `DATABASE_URL` and `REDIS_URL`: the public Railway URLs (`DATABASE_PUBLIC_URL` and `REDIS_PUBLIC_URL` from Railway).
-   - `ENCRYPTION_KEY`: the exact same value as on the worker.
-3. Deploy. The build runs `prisma generate` before `next build`, so the Prisma client is generated even though it is gitignored.
-4. The daily token-refresh cron is wired up in `vercel.json`.
-
-Note on crons: Vercel's free plan allows each cron to run at most once per day. The repo's crons are set to daily for that reason. The comment polling reconciler does not use a Vercel cron; it runs inside the Railway worker on its own interval, so the free plan is not a constraint there.
-
-Optional custom domain: if you want `openreply.yoursite.com` instead of the Vercel URL, add it in Vercel under Domains and make it primary. Then update `NEXTAUTH_URL` and the two Meta URLs (Step 7 and Step 8 below) to the new domain, and update the worker's `NEXTAUTH_URL` too, or tracked links in DMs will point at the old domain.
+Optional custom domain: if you use one, set `NEXTAUTH_URL` to that primary Vercel domain in both services and update the Meta OAuth and webhook URLs.
 
 ## Environment variables
 
-Copy `.env.example` to `.env` for local work, or set these in Vercel and Railway for hosting.
+Copy `.env.example` to `.env` for local work, or set the values in Vercel and Render for hosting.
 
 | Variable | What it is |
 | --- | --- |
@@ -90,8 +48,8 @@ Copy `.env.example` to `.env` for local work, or set these in Vercel and Railway
 | `NEXTAUTH_SECRET` | Random secret. `openssl rand -base64 32` |
 | `CRON_SECRET` | Random secret protecting the token-refresh cron. |
 | `ENCRYPTION_KEY` | 32-byte hex. `openssl rand -hex 32`. Encrypts Instagram tokens. Identical across web and worker. |
-| `DATABASE_URL` | PostgreSQL connection string. Public Railway URL on Vercel; internal on the worker. |
-| `REDIS_URL` | Redis connection string. Must support blocking commands, so an HTTP-only Redis will not work with BullMQ. |
+| `DATABASE_URL` | PostgreSQL URL. Use Render's external URL on Vercel and its private URL on the Render worker. |
+| `REDIS_URL` | Authenticated Redis TCP URL with TLS. Use the same Redis instance in Vercel and Render; HTTP-only Redis will not work with BullMQ. |
 | `RESEND_API_KEY` | Resend key. Login is email magic links only, so without this nobody can sign in. |
 | `EMAIL_FROM` | A sender on a domain you verified in Resend. The placeholder will not deliver. |
 | `ALLOWED_EMAILS` | Optional. Comma-separated allowlist of addresses that may sign in, case insensitive. Unset, anyone who reaches your public URL can request a magic link and gets their own workspace, which is worth closing on an instance you run for yourself. |
@@ -286,9 +244,10 @@ or host it for other people to sign up.>
 Work through this in order and stop to ask me whenever you need a value or an
 action only I can do:
 
-1. Local or hosted. Ask me which I want. If hosted, we use Vercel for the web
-   app (its domain becomes my public URL) and Railway for the worker plus
-   Postgres and Redis. If local, we use docker-compose and a tunnel.
+1. Local or hosted. Ask me which I want. If hosted, use Vercel for the
+   frontend/webhook, Render for the worker and Postgres, and an authenticated
+   TCP Redis provider shared by both apps. Read docs/deploy-vercel-render.md.
+   If local, we use docker-compose and a tunnel.
 
 2. Datastores. Help me get a Postgres and a Redis running, then run the Prisma
    migration against them.

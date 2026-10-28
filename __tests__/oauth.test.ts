@@ -4,7 +4,7 @@ import {
   decryptToken,
   encryptToken,
   verifyOAuthState,
-} from "../lib/meta/oauth";
+} from "../frontend/lib/meta/oauth";
 
 beforeEach(() => {
   vi.stubEnv("NEXTAUTH_SECRET", "test-secret-with-enough-length");
