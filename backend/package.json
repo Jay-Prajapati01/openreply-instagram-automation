@@ -2,6 +2,7 @@
   "name": "@openreply/backend",
   "private": true,
   "scripts": {
-    "worker": "node --import=tsx worker/bootstrap.ts"
+    "worker": "node --import=tsx worker/bootstrap.ts",
+    "worker-web": "node --import=tsx worker/web-bootstrap.ts"
   }
 }

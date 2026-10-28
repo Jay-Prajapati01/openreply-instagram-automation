@@ -9,8 +9,8 @@ If you would rather have an AI assistant drive most of this, skip to [Set it up 
 OpenReply is split into a frontend workspace and a backend worker workspace.
 
 - `frontend/`: Next.js dashboard, API routes, OAuth callback, and Meta webhook. Deploy this workspace to Vercel.
-- `backend/`: long-running Node worker (`npm run worker`) that consumes the send queue and reconciles missed comments. Deploy it as an always-on Render background worker.
-- PostgreSQL: campaigns, logs, accounts, and sessions. The worker uses Render's private connection; Vercel uses the database's external connection URL.
+- `backend/`: long-running Node worker (`npm run worker`) that consumes the send queue and reconciles missed comments. The free-tier Render setup runs it as a Web Service with a small `/health` endpoint.
+- PostgreSQL: campaigns, logs, accounts, and sessions. Use the same external Neon connection string from Vercel and Render.
 - Redis: BullMQ queue and per-account rate limiter. Use a Redis provider with authenticated TCP/TLS access so both Vercel and Render can reach the same instance. An HTTP-only Redis API will not work with BullMQ.
 
 Both services must use the same database, Redis instance, and `ENCRYPTION_KEY`. The web app stores an encrypted Instagram token; the worker decrypts it to send. Different keys mean every send fails to decrypt.
@@ -19,20 +19,21 @@ Both services must use the same database, Redis instance, and `ENCRYPTION_KEY`. 
 
 - A Facebook account. Meta developer registration is built on it. There is no Instagram-only path.
 - An Instagram Business or Creator account. A personal account cannot be connected. Switch it in the Instagram app under Settings, Account type, if needed.
-- A [Resend](https://resend.com) account for login emails, with a verified sender domain. Login is email magic links only, so without this nobody can sign in. If you already run your own mail server, you can point `EMAIL_SERVER` at it instead and skip Resend entirely — see the [environment variables](#environment-variables) table.
-- A GitHub repository containing your copy, a Vercel account, and a Render account. The Render worker and persistent production data require paid plans. See [deploy-vercel-render.md](deploy-vercel-render.md) for the deployment steps.
+- An SMTP server for login links or a [Resend](https://resend.com) account. For one personal user, Gmail SMTP can be used with an app password; this avoids Resend and sender-domain setup.
+- A GitHub repository containing your copy, a Vercel account, and a Render account. The free setup uses external Neon Postgres and Redis, and a Render Web Service workaround for the worker. See [deploy-vercel-render.md](deploy-vercel-render.md) for the limitations and steps.
 
 ## Hosting and your domain
 
 You do not need to buy a domain. Deploying the web app to Vercel gives you a free public URL like `your-app.vercel.app`, and that URL is what everything else points at: `NEXTAUTH_URL`, the Meta OAuth redirect, and the Meta webhook callback all use it. If you want a custom domain later you can add one, but it is optional and you can launch without it.
 
-Deployment split:
+Personal-use deployment split:
 
 - Web app and Meta webhook: Vercel, with project root `frontend/`.
-- Worker and PostgreSQL: Render, configured from the root `render.yaml` Blueprint.
-- Redis: an authenticated TCP Redis service such as Redis Cloud. Its TLS URL is shared by both app workspaces.
+- Worker: Render Free Web Service, configured from the root `render.yaml` Blueprint and kept warm best-effort by an external monitor.
+- PostgreSQL: Neon. Use one database URL in both app workspaces.
+- Redis: an authenticated TCP Redis service such as Redis Cloud or Upstash. Its TLS URL is shared by both app workspaces.
 
-Follow [deploy-vercel-render.md](deploy-vercel-render.md) to create the GitHub repository, configure both hosting providers, and set the external database and Redis URLs.
+Follow [deploy-vercel-render.md](deploy-vercel-render.md) to configure both hosting providers and set the external database and Redis URLs. Render's free-hour allowance is shared with other services in the workspace; a frequently pinged worker can use almost all of it.
 
 Vercel cron definitions are in `frontend/vercel.json`. On Vercel Hobby, each cron can run at most once per day, so a campaign waiting for the next Reel can take up to a day to attach. The comment reconciliation poll runs in the Render worker every five minutes.
 
@@ -48,12 +49,12 @@ Copy `.env.example` to `.env` for local work, or set the values in Vercel and Re
 | `NEXTAUTH_SECRET` | Random secret. `openssl rand -base64 32` |
 | `CRON_SECRET` | Random secret protecting the token-refresh cron. |
 | `ENCRYPTION_KEY` | 32-byte hex. `openssl rand -hex 32`. Encrypts Instagram tokens. Identical across web and worker. |
-| `DATABASE_URL` | PostgreSQL URL. Use Render's external URL on Vercel and its private URL on the Render worker. |
+| `DATABASE_URL` | PostgreSQL URL from Neon. Use the same database on Vercel and Render. |
 | `REDIS_URL` | Authenticated Redis TCP URL with TLS. Use the same Redis instance in Vercel and Render; HTTP-only Redis will not work with BullMQ. |
-| `RESEND_API_KEY` | Resend key. Login is email magic links only, so without this nobody can sign in. |
-| `EMAIL_FROM` | A sender on a domain you verified in Resend. The placeholder will not deliver. |
+| `RESEND_API_KEY` | Optional Resend key. Not needed when `EMAIL_SERVER` is set. |
+| `EMAIL_FROM` | The sender address/name for magic links; for Gmail SMTP use your Gmail address. |
 | `ALLOWED_EMAILS` | Optional. Comma-separated allowlist of addresses that may sign in, case insensitive. Unset, anyone who reaches your public URL can request a magic link and gets their own workspace, which is worth closing on an instance you run for yourself. |
-| `EMAIL_SERVER` | Optional. An SMTP URL, for example `smtps://login%40example.com:password@mail.example.com:465`. Set it to send magic links through your own mail server instead of Resend; then `RESEND_API_KEY` is not needed. URL-encode special characters in the user and password (`@` becomes `%40`). Port 465 with `smtps://` is implicit TLS, port 587 with `smtp://` is STARTTLS. |
+| `EMAIL_SERVER` | Optional SMTP URL, e.g. `smtps://you%40gmail.com:APP_PASSWORD@smtp.gmail.com:465`. For Gmail, enable 2-Step Verification and create an App Password. Remove spaces from the app password and URL-encode special characters. Port 465 with `smtps://` is implicit TLS; port 587 with `smtp://` is STARTTLS. When set, the app uses SMTP instead of Resend. |
 | `META_GRAPH_API_VERSION` | Graph API version, for example `v25.0`. |
 | `INSTAGRAM_APP_ID` | From the Meta app, see Step 6. |
 | `INSTAGRAM_APP_SECRET` | From the Meta app. |

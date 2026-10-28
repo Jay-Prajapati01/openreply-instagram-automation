@@ -57,13 +57,13 @@ The web app receives the webhook and serves the dashboard. A separate worker pro
 
 ## Quick start
 
-You need a Meta developer app, a Resend account for login emails, and hosting. This repository uses a Vercel frontend and a Render background worker. The Instagram account you connect has to be a Business or Creator account, not a personal one. Hosting and database costs depend on the plans you choose.
+You need a Meta developer app, an Instagram Business or Creator account, and hosting. For a single personal-use setup, login links can be sent through Gmail SMTP, and the deployment guide covers free-tier hosting options and their limits.
 
 The honest version: the code deploys in minutes, but the Meta app setup is the part that takes real time. Read [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) for hosting, then [docs/setup.md](docs/setup.md) for environment variables and Meta setup.
 
 ### Deploy the web app
 
-Vercel's project root directory is `frontend/`. Render uses the root `render.yaml` Blueprint to configure the background worker and Postgres. Follow [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) to connect your own GitHub repository and hosting accounts.
+Vercel's project root directory is `frontend/`. The root `render.yaml` Blueprint configures the worker as a Render Free Web Service; Neon and Redis are external services. Follow [docs/deploy-vercel-render.md](docs/deploy-vercel-render.md) for the personal free-tier setup and its limitations.
 
 ### Run it locally
 
@@ -91,11 +91,11 @@ If you use Claude Code, Cursor, or a similar tool, the Meta setup is a lot faste
 - Next.js 16 and React 19 for the web app and API routes
 - Prisma 7 with PostgreSQL
 - BullMQ on Redis for the send queue and the worker
-- Auth.js (NextAuth) with email magic links through Resend
+- Auth.js (NextAuth) with email magic links through SMTP or Resend
 - Tailwind CSS for the interface
 - The official Instagram API with Instagram Login
 
-For the complete stack — application libraries, the two runtime processes, and the free services this runs on (Vercel, Neon, Redis Cloud, an Oracle Cloud always-free VM for the worker, Resend, Meta) — see [docs/stack.md](docs/stack.md).
+For the complete stack and personal free-tier deployment notes (Vercel, Neon, TCP Redis, Render worker, Gmail SMTP, and Meta), see [docs/stack.md](docs/stack.md).
 
 ## Contributing
 
